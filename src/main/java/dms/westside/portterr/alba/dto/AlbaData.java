@@ -9,5 +9,12 @@ import java.util.Map;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AlbaData {
+    //for getting terr ids
     Map<String, AlbaBorder> borders;
+
+    //for getting address ids
+    Map<String, Object> locations;
+
+    //for getting address ids
+    AlbaHtml html;
 }

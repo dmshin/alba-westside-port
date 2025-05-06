@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -19,54 +20,75 @@ public class AlbaService {
     @Autowired
     RestTemplate restTemplate;
 
-    public void makeHttpRequest() {
+    @Autowired
+    HttpEntity httpEntity;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        //List<MediaType> accept = new ArrayList(1);
-        //accept.add(MediaType.APPLICATION_JSON);
-        //accept.add(MediaType.text_Jb)
-       // headers.setAccept(accept);
-        headers.add("Cookie", "Alba3=r8n08tkjt3mr0gjdr5st4lu5ca;alba_an=manhattanportuguese;alba_un=daniels");
-        headers.add("Accept", "application/json, text/javascript, */*; q=0.01");
-        /*
-        headers.add("Accept-Encoding", "deflate, br, zstd");
-        headers.add("X-Requested-With", "XMLHttpRequest");
-        headers.add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36");
-        headers.add("Priority", "u=1, i");
-        headers.add("sec-ch-ua", "\"Chromium\";v=\"134\", \"Not:A-Brand\";v=\"24\", \"Google Chrome\";v=\"134\"");
-        headers.add("sec-ch-ua-mobile", "?0'");
-        headers.add("sec-ch-ua-platform", "macOS");
-        headers.add("sec-fetch-dest", "empty");
-        headers.add("sec-fetch-mode", "cors");
-        headers.add("sec-fetch-site", "same-origin");
-        headers.add("Referer", "https://www.mcmxiv.com/alba/territories2");
-         */
+    enum URL {
+        GET_ALL_TERRS ("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=search&kinds[]=0&kinds[]=1&kinds[]=2&q=&sort=number&order=asc"),
+        GET_TERR_ADDRESSES ("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=search&acids=4807&exp=false&npp=25&cp=1&tid=terrId&lid=0&display=1,2,3,4,5,6&onlyun=false&q=&sort=id&order=desc&lat=&lng="),
+        GET_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=edit&lat=&lng=&id=addressId");
+
+        public String url;
+         URL(String url) {
+            this.url = url;
+        }
+
+        public String value() {
+             return url;
+        }
+    }
 
 
+    public void doTheDeed() {
 
-        // Create HttpEntity with headers
-        HttpEntity<String> entity = new HttpEntity<>(headers);
+        Set<String> terrIds = getAllTerritories();
+        for(String terrId : terrIds) {
 
-        //String url = "https://www.mcmxiv.com/alba/ts?mod=territories&cmd=search&kinds%5B%5D=0&kinds%5B%5D=1&kinds%5B%5D=2&q=&sort=number&order=asc";
-        String url = "https://www.mcmxiv.com/alba/ts?mod=territories&cmd=search&kinds[]=0&kinds[]=1&kinds[]=2&q=&sort=number&order=asc";
-
-        //String body = restTemplate.exchange(url, HttpMethod.GET, entity, String.class).getBody();
-        //Logger.log(body);
-
-        //ObjectNode node = restTemplate.exchange(url, HttpMethod.GET, entity, ObjectNode.class).getBody();
-        //JsonNode jNode = node.get("data").get("borders");
-        //Logger.log(jNode.iterator().next().toString());
-        //AlbaResponse resp  = restTemplate.exchange(url, HttpMethod.GET, entity, AlbaResponse.class).getBody();
-
-        ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, AlbaResponse.class);
-        AlbaResponse resp = responseEntity.getBody();
-        Logger.log(resp.getReq().getGet().getCmd());
-        //Logger.log(resp.getReq().getGet().getMod());
-        //Logger.log(resp.getData().getHtml().getAddresses());
-        //resp.getData().getBorders().keySet().stream().forEach(e -> Logger.log(e.toString()));
-
+            Set<String> addressIds = getTerritoryAddressIds(terrId);
+            boolean newDoormanTerrCreated = false;
+            String doormanTerrId;
+            for(String addressId : addressIds) {
+                String address = getAddress(addressId);
+                boolean isDoorman = AlbaHelper.isDoorman(address);
+                if(isDoorman) {
+                    if(!newDoormanTerrCreated) {
+                        //doormanTerrId = create new territory
+                    }
+                    //move address to new territory
+                }
+            }
+        }
 
     }
+
+
+
+    public Set<String> getAllTerritories() {
+
+        String url = URL.GET_ALL_TERRS.value();
+
+        ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
+        AlbaResponse resp = responseEntity.getBody();
+        return resp.getData().getBorders().keySet();
+    }
+
+    public Set<String> getTerritoryAddressIds(String terrId) {
+
+        String url = URL.GET_TERR_ADDRESSES.value().replaceAll("terrId", terrId);
+
+        ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
+        AlbaResponse resp = responseEntity.getBody();
+        return resp.getData().getLocations().keySet();
+    }
+
+    public String getAddress(String addressId) {
+        String url = URL.GET_ADDRESS.value().replaceAll("addressId", addressId);
+
+        ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
+        AlbaResponse resp = responseEntity.getBody();
+        return resp.getData().getHtml().getAddress().values().iterator().next();
+
+    }
+
 
 }

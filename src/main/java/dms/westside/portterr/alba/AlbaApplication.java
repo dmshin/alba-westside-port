@@ -2,6 +2,7 @@ package dms.westside.portterr.alba;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dms.westside.portterr.alba.dto.AlbaResponse;
+import dms.westside.portterr.alba.util.Logger;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
+import java.util.Set;
 
 @SpringBootApplication(exclude = {ServletWebServerFactoryAutoConfiguration.class, WebMvcAutoConfiguration.class})
 @EnableConfigurationProperties
@@ -40,16 +42,7 @@ public class AlbaApplication {
 	@Bean
 	public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
 		return args -> {
-
-		service.makeHttpRequest();
-
-		log("bla bla bla");
-			//get list of territories
-			//for each list of territories
-			//	for each address in territory
-			//		if doorman
-			//			if terr not created, create
-			//			move to newly created territory (need new terr id)
+			service.doTheDeed();
 		};
 	}
 
