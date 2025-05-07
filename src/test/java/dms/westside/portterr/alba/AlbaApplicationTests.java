@@ -1,5 +1,6 @@
 package dms.westside.portterr.alba;
 
+import dms.westside.portterr.alba.dto.AlbaAddress;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.Assert;
@@ -14,18 +15,28 @@ class AlbaApplicationTests {
 
 	@Test
 	void testDoormanVerification() {
-		String address = "slkfdj>Doorman<sldfkj";
-		Assert.isTrue(AlbaHelper.isDoorman(address), "This was supposed to match but didn't: " + address);
+		AlbaAddress addr = new AlbaAddress();
 
-		address = "slkfdj>  Doorman  <sldfkj";
-		Assert.isTrue(AlbaHelper.isDoorman(address), "This was supposed to match but didn't: " + address);
+		addr.setNotes("Doorman");
+		Assert.isTrue(AlbaHelper.isDoorman(addr), "This was supposed to match but didn't: " + addr.getNotes());
 
-		address = "slkfdj>  DooRman  <sldfkj";
-		Assert.isTrue(AlbaHelper.isDoorman(address), "This was supposed to match but didn't: " + address);
+		addr.setNotes("Doorman  ");
+		Assert.isTrue(AlbaHelper.isDoorman(addr), "This was supposed to match but didn't: " + addr.getNotes());
 
-		address = "slkfdj DooRman  <sldfkj";
-		Assert.isTrue(!AlbaHelper.isDoorman(address), "This was NOT supposed to match but did: " + address);
+		addr.setNotes("   Doorman");
+		Assert.isTrue(AlbaHelper.isDoorman(addr), "This was supposed to match but didn't: " + addr.getNotes());
 
+		addr.setNotes("slkfd Doorman sldfkj");
+		Assert.isTrue(AlbaHelper.isDoorman(addr), "This was supposed to match but didn't: " + addr.getNotes());
+
+		addr.setNotes("  Doorman  sldfkj");
+		Assert.isTrue(AlbaHelper.isDoorman(addr), "This was supposed to match but didn't: " + addr.getNotes());
+
+		addr.setNotes("slkfdj  DooRman  ");
+		Assert.isTrue(AlbaHelper.isDoorman(addr), "This was supposed to match but didn't: " + addr.getNotes());
+
+		addr.setNotes("slkfdj DoooRman  sldfkj");
+		Assert.isTrue(!AlbaHelper.isDoorman(addr), "This was NOT supposed to match but did: " + addr.getNotes());
 	}
 
 }
