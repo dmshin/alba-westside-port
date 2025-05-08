@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,8 @@ public class AlbaService {
         GET_ALL_TERRS ("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=search&kinds[]=0&kinds[]=1&kinds[]=2&q=&sort=number&order=asc"),
         GET_TERR_ADDRESSES ("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=search&acids=4807&exp=false&npp=25&cp=1&tid=terrId&lid=0&display=1,2,3,4,5,6&onlyun=false&q=&sort=id&order=desc&lat=&lng="),
         GET_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=edit&lat=&lng=&id=addressId"),
-        UPDATE_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=save&id=addressId");
+        UPDATE_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=save&id=addressId"),
+        CREATE_TERR("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=add&border=43.30630930129742+-73.40916769484804%2C38.44405948429021+-73.40916769484804%2C38.44405948429021+-79.70028613734749%2C43.30630930129742+-79.70028613734749");
 
         public String url;
          URL(String url) {
@@ -43,6 +45,9 @@ public class AlbaService {
 
     public void doTheDeed() {
 
+        //TODO: remove; testing only
+        //createLetterTerritory("");
+
         Set<String> terrIds = getAllTerritories();
         for(String terrId : terrIds) {
 
@@ -54,19 +59,45 @@ public class AlbaService {
                 AlbaAddress albaAddress = getAlbaAddress(addressId);
 
                 //TODO: remove this; testing only
-                //albaAddress.setTerritory_id("0");
+                //albaAddress.setTerritory_id("815972");
                 //albaAddress.setFull_name("Daniel Paul Pimenta");
 
                 boolean isDoorman = AlbaHelper.isDoorman(albaAddress);
                 if(isDoorman) {
                     if(!newDoormanTerrCreated) {
-                        //doormanTerrId = create new territory
+                        //doormanTerrId = createLetterTerritory(terrId);
                         newDoormanTerrCreated = true;
                     }
-                    updateAddress(albaAddress);
+                    //updateAddress(albaAddress);
                 }
             }
         }
+
+    }
+
+    public String createLetterTerritory(String terrName) {
+        String baseUrl = URL.CREATE_TERR.value();
+
+        //get territory by id from alba
+        //get number and description
+
+        String newTerrName = "Letters " + terrName;
+
+        String url = UriComponentsBuilder.fromUriString(baseUrl)
+                .queryParam("number", AlbaHelper.encodeUtf8(newTerrName))
+                .queryParam("description", "daniel7desc")
+                .queryParam("notes", "")
+                .queryParam("kind", "1")
+                .build()
+                .toUriString();
+
+
+        Logger.log(url);
+
+        ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
+        AlbaResponse resp = responseEntity.getBody();
+
+        return null;
 
     }
 
@@ -95,8 +126,6 @@ public class AlbaService {
         String url = URL.UPDATE_ADDRESS.value().replaceAll("addressId", albaAddress.getId());
 
         url = AlbaHelper.addQueryParams(albaAddress, url);
-
-        Logger.log(url);
 
         ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
         AlbaResponse resp = responseEntity.getBody();

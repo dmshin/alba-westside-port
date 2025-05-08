@@ -39,7 +39,7 @@ public class AlbaHelper {
     }
 
 
-    private static String encodeUtf8(String val) {
+    public static String encodeUtf8(String val) {
         try {
             return URLEncoder.encode(val, "UTF-8");
         } catch (UnsupportedEncodingException ex) {
