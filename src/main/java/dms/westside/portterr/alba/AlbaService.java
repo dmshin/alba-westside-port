@@ -1,12 +1,19 @@
 package dms.westside.portterr.alba;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import dms.westside.portterr.alba.dto.AlbaAddress;
 import dms.westside.portterr.alba.dto.AlbaResponse;
+import dms.westside.portterr.alba.dto.AlbaTerritory;
+import dms.westside.portterr.alba.dto.getallterritories.AllTerrResponse;
 import dms.westside.portterr.alba.util.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -19,6 +26,17 @@ import java.util.Set;
 @Service
 public class AlbaService {
 
+
+    @Value("#{new Boolean('${dryrun:true}')}")
+    Boolean dryrun;
+
+
+    @Value("#{new Integer('${territory.limit:1}')}")
+    Integer territoryLimit; //for testing purposes; limit how many territory are processed
+
+    @Value("#{new Integer('${addresses.per.territory.limit:3}')}")
+    Integer addrPerTerrLimit;  //for testing purposes; limit how many address per terr are processed
+
     @Autowired
     RestTemplate restTemplate;
 
@@ -30,7 +48,9 @@ public class AlbaService {
         GET_TERR_ADDRESSES ("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=search&acids=4807&exp=false&npp=25&cp=1&tid=terrId&lid=0&display=1,2,3,4,5,6&onlyun=false&q=&sort=id&order=desc&lat=&lng="),
         GET_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=edit&lat=&lng=&id=addressId"),
         UPDATE_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=save&id=addressId"),
-        CREATE_TERR("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=add&border=43.30630930129742+-73.40916769484804%2C38.44405948429021+-73.40916769484804%2C38.44405948429021+-79.70028613734749%2C43.30630930129742+-79.70028613734749");
+        CREATE_TERR("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=add&border=43.30630930129742+-73.40916769484804%2C38.44405948429021+-73.40916769484804%2C38.44405948429021+-79.70028613734749%2C43.30630930129742+-79.70028613734749"),
+        GET_TERR("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=edit&id=territoryId");
+
 
         public String url;
          URL(String url) {
@@ -45,59 +65,91 @@ public class AlbaService {
 
     public void doTheDeed() {
 
-        //TODO: remove; testing only
-        //createLetterTerritory("");
+        Logger.log("************************************");
+        Logger.log("Doing the deed." + (dryrun ? " DRY RUN MODE" : "DOING THE REAL DEAL!"));
+        Logger.log("************************************");
 
         Set<String> terrIds = getAllTerritories();
+        int totalTerrCount = terrIds.size();
+        int terrCount = 1;
         for(String terrId : terrIds) {
 
+            Logger.log ("******** Processing Territory Id: " + terrId + " - " + terrCount + " of " + totalTerrCount + " ********" );
+            Logger.log("Getting territory details...");
+            AlbaTerritory albaTerritory = getTerritory(terrId);
+            Logger.log("Success! Territory " + albaTerritory.getNumber() + " | " + albaTerritory.getDescription() + " retrieved.");
+
             Set<String> addressIds = getTerritoryAddressIds(terrId);
-            boolean newDoormanTerrCreated = false;
-            String doormanTerrId;
+            int totalAddressCount = addressIds != null ? addressIds.size() : 0;
+            Logger.log("Number of addresses: " + totalAddressCount);
+            boolean newLetterTerrCreated = false;
+            String letterTerrId = null;
+            int addressCount = 1;
             for(String addressId : addressIds) {
-
+                Logger.log("***** Getting details for address id: " + addressId + " - " + addressCount + " of " + totalAddressCount + " *****");
                 AlbaAddress albaAddress = getAlbaAddress(addressId);
-
-                //TODO: remove this; testing only
-                //albaAddress.setTerritory_id("815972");
-                //albaAddress.setFull_name("Daniel Paul Pimenta");
-
-                boolean isDoorman = AlbaHelper.isDoorman(albaAddress);
-                if(isDoorman) {
-                    if(!newDoormanTerrCreated) {
-                        //doormanTerrId = createLetterTerritory(terrId);
-                        newDoormanTerrCreated = true;
+                Logger.log("Success! Details retrieved for " + albaAddress.getFull_name() +  " living at " + albaAddress.getAddress());
+                boolean isLetterAddress = AlbaHelper.isDoorman(albaAddress);
+                Logger.log("Is letter address? " + isLetterAddress);
+                if(isLetterAddress) {
+                    if(!newLetterTerrCreated) {
+                        Logger.log("Letters territory being created for " + albaTerritory.getNumber());
+                        letterTerrId = createLetterTerritory(albaTerritory);
+                        newLetterTerrCreated = true;
                     }
-                    //updateAddress(albaAddress);
+                    albaAddress.setTerritory_id(letterTerrId);
+                    updateAddress(albaAddress);
                 }
+                if(addressCount >= addrPerTerrLimit) {
+                    //for testing purposes to process only some
+                    break;
+                }
+                addressCount++;
             }
+            if(terrCount >= territoryLimit) {
+                //for testing purposes to process only some
+                return;
+            }
+            terrCount++;
         }
 
     }
 
-    public String createLetterTerritory(String terrName) {
+    public AlbaTerritory getTerritory(String terrId) {
+        String url = URL.GET_TERR.value().replaceAll("territoryId", terrId);
+
+        ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
+        AlbaResponse resp = responseEntity.getBody();
+        String terrHtml = resp.getData().getHtml().getTerritory().values().iterator().next();
+        return AlbaHelper.parseTerritory(terrId, terrHtml);
+    }
+
+    public String createLetterTerritory(AlbaTerritory albaTerritory) {
+
+        if(dryrun) {
+            Logger.log("DRY RUN: Not actually creating letter territory.  Returning terr id:dryRunTerrId");
+            return "dryRunTerrId";
+        }
+
         String baseUrl = URL.CREATE_TERR.value();
+        String newTerrName = "Letters " + albaTerritory.getNumber();
 
-        //get territory by id from alba
-        //get number and description
-
-        String newTerrName = "Letters " + terrName;
+        Logger.log("Creating new letter territory for " + albaTerritory.getId() + " " + albaTerritory.getNumber() + " " + albaTerritory.getDescription());
 
         String url = UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("number", AlbaHelper.encodeUtf8(newTerrName))
-                .queryParam("description", "daniel7desc")
+                .queryParam("description", AlbaHelper.encodeUtf8(albaTerritory.getDescription()))
                 .queryParam("notes", "")
                 .queryParam("kind", "1")
                 .build()
                 .toUriString();
 
-
-        Logger.log(url);
-
         ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
         AlbaResponse resp = responseEntity.getBody();
+        String newTerrId = resp.getData().getHtml().getTerritories().keySet().iterator().next();
 
-        return null;
+        Logger.log("SUCCESS! New territory created: " + newTerrId);
+        return newTerrId;
 
     }
 
@@ -107,8 +159,8 @@ public class AlbaService {
 
         String url = URL.GET_ALL_TERRS.value();
 
-        ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
-        AlbaResponse resp = responseEntity.getBody();
+        ResponseEntity<AllTerrResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AllTerrResponse.class);
+        AllTerrResponse resp = responseEntity.getBody();
         return resp.getData().getBorders().keySet();
     }
 
@@ -123,13 +175,20 @@ public class AlbaService {
 
 
     public void updateAddress(AlbaAddress albaAddress) {
+
+        if(dryrun) {
+            Logger.log("DRY RUN: Moving address to territory id:" + albaAddress.getTerritory_id());
+            return;
+        }
+
+        Logger.log("Updating address " + albaAddress.getId() + " " + albaAddress.getFull_name() + " at " + albaAddress.getAddress() + " to terr id " + albaAddress.getTerritory_id());
+
         String url = URL.UPDATE_ADDRESS.value().replaceAll("addressId", albaAddress.getId());
 
         url = AlbaHelper.addQueryParams(albaAddress, url);
 
         ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
-        AlbaResponse resp = responseEntity.getBody();
-
+        Logger.log("SUCCESS!  Address updated.");
     }
 
     public String getAddressHtml(String addressId) {

@@ -1,15 +1,14 @@
-package dms.westside.portterr.alba.dto;
+package dms.westside.portterr.alba.dto.getallterritories;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import dms.westside.portterr.alba.AlbaApplication;
+import dms.westside.portterr.alba.dto.AlbaData;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Map;
 
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AlbaReq {
-    AlbaCmd get;
+public class AllTerrResponse {
+    AllTerrAlbaData data;
 }
+

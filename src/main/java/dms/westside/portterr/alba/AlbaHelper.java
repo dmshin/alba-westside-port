@@ -1,6 +1,7 @@
 package dms.westside.portterr.alba;
 
 import dms.westside.portterr.alba.dto.AlbaAddress;
+import dms.westside.portterr.alba.dto.AlbaTerritory;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -47,6 +48,20 @@ public class AlbaHelper {
         }
     }
 
+    public static AlbaTerritory parseTerritory(String terrId, String terrHtml) {
+
+        Document doc = Jsoup.parse(terrHtml);
+
+        AlbaTerritory albaTerritory = new AlbaTerritory();
+        albaTerritory.setId(terrId);
+
+        albaTerritory.setNumber(parseAttrValue(doc, "number"));
+        albaTerritory.setDescription(parseAttrValue(doc, "description"));
+        albaTerritory.setNotes(parseValue(doc, "notes"));
+        albaTerritory.setKind(parseSelectValue(doc, "kind"));
+        return albaTerritory;
+    }
+
     public static AlbaAddress parseAddress(String addressId, String addressHtml) {
 
         Document doc = Jsoup.parse(addressHtml);
@@ -74,7 +89,13 @@ public class AlbaHelper {
         return albaAddress;
     }
 
+    private static String parseAttrValue(Document doc, String attr) {
+        //works for <input name=attr value=value/>
+        return doc.getElementsByAttributeValue("name", attr).first().attribute("value").getValue();
+    }
+
     private static String parseValue(Document doc, String attr) {
+        //works for <input name=attr>value</input>
         return doc.getElementsByAttributeValue("name", attr).first().val();
     }
 
