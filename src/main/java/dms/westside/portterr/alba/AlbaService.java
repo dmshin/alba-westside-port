@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -48,7 +49,7 @@ public class AlbaService {
 
     enum URL {
         GET_ALL_TERRS ("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=search&kinds[]=0&kinds[]=1&kinds[]=2&q=&sort=number&order=asc"),
-        GET_TERR_ADDRESSES ("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=search&acids=4807&exp=false&npp=25&cp=1&tid=terrId&lid=0&display=1,2,3,4,5,6&onlyun=false&q=&sort=id&order=desc&lat=&lng="),
+        GET_TERR_ADDRESSES ("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=search&acids=4807&exp=false&npp=100&cp=currPage&tid=terrId&lid=0&display=1,2,3,4,5,6&onlyun=false&q=&sort=id&order=desc&lat=&lng="),
         GET_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=edit&lat=&lng=&id=addressId"),
         UPDATE_ADDRESS("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=save&id=addressId"),
         CREATE_TERR("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=add&border=43.30630930129742+-73.40916769484804%2C38.44405948429021+-73.40916769484804%2C38.44405948429021+-79.70028613734749%2C43.30630930129742+-79.70028613734749"),
@@ -69,11 +70,12 @@ public class AlbaService {
     public void doTheDeed() {
 
         Logger.log("************************************");
-        Logger.log("Doing the deed." + (dryrun ? " DRY RUN MODE" : "DOING THE REAL DEAL!"));
+        Logger.log("Doing the deed.  " + (dryrun ? " DRY RUN MODE" : "DOING THE REAL DEAL!"));
         Logger.log("************************************");
-        
+
 
         Set<String> terrIds = getAllTerritories();
+
         int totalTerrCount = terrIds.size();
         int terrCount = 1;
         for(String terrId : terrIds) {
@@ -170,11 +172,30 @@ public class AlbaService {
 
     public Set<String> getTerritoryAddressIds(String terrId) {
 
-        String url = URL.GET_TERR_ADDRESSES.value().replaceAll("terrId", terrId);
+        Set<String> result = new HashSet<>();
+
+        boolean moreAddressExist = true;
+        int page = 1;
+        do {
+            Set<String> pageAddressIds = getTerritoryAddressIdsForOnePage(terrId, page);
+            if(pageAddressIds != null) {
+                result.addAll(pageAddressIds);
+                page++;
+            } else {
+                moreAddressExist = false;
+            }
+        } while ( moreAddressExist);
+
+        return result;
+    }
+
+    private Set<String> getTerritoryAddressIdsForOnePage(String terrId, Integer pageNum) {
+
+        String url = URL.GET_TERR_ADDRESSES.value().replaceAll("terrId", terrId).replaceAll("currPage", pageNum.toString());
 
         ResponseEntity<AlbaResponse> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, AlbaResponse.class);
         AlbaResponse resp = responseEntity.getBody();
-        return resp.getData().getLocations().keySet();
+        return resp.getData().getLocations() == null ? null : resp.getData().getLocations().keySet();
     }
 
 
