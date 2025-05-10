@@ -43,6 +43,9 @@ public class AlbaService {
     @Autowired
     HttpEntity httpEntity;
 
+    @Autowired
+    HttpEntity httpEntity2;
+
     enum URL {
         GET_ALL_TERRS ("https://www.mcmxiv.com/alba/ts?mod=territories&cmd=search&kinds[]=0&kinds[]=1&kinds[]=2&q=&sort=number&order=asc"),
         GET_TERR_ADDRESSES ("https://www.mcmxiv.com/alba/ts?mod=addresses&cmd=search&acids=4807&exp=false&npp=25&cp=1&tid=terrId&lid=0&display=1,2,3,4,5,6&onlyun=false&q=&sort=id&order=desc&lat=&lng="),
@@ -68,6 +71,7 @@ public class AlbaService {
         Logger.log("************************************");
         Logger.log("Doing the deed." + (dryrun ? " DRY RUN MODE" : "DOING THE REAL DEAL!"));
         Logger.log("************************************");
+        
 
         Set<String> terrIds = getAllTerritories();
         int totalTerrCount = terrIds.size();
@@ -137,8 +141,8 @@ public class AlbaService {
         Logger.log("Creating new letter territory for " + albaTerritory.getId() + " " + albaTerritory.getNumber() + " " + albaTerritory.getDescription());
 
         String url = UriComponentsBuilder.fromUriString(baseUrl)
-                .queryParam("number", AlbaHelper.encodeUtf8(newTerrName))
-                .queryParam("description", AlbaHelper.encodeUtf8(albaTerritory.getDescription()))
+                .queryParam("number", newTerrName)
+                .queryParam("description", albaTerritory.getDescription())
                 .queryParam("notes", "")
                 .queryParam("kind", "1")
                 .build()

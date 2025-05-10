@@ -18,21 +18,22 @@ public class AlbaHelper {
 
     public static String addQueryParams(AlbaAddress albaAddress, String url) {
         String newUrl = UriComponentsBuilder.fromUriString(url)
-                .queryParam("territory_id", encodeUtf8(albaAddress.getTerritory_id()))
-                .queryParam("language_id", encodeUtf8(albaAddress.getLanguage_id()))
-                .queryParam("status", encodeUtf8(albaAddress.getStatus()))
-                .queryParam("lat", encodeUtf8(albaAddress.getLat()))
-                .queryParam("lng", encodeUtf8(albaAddress.getLng()))
-                .queryParam("full_name", encodeUtf8(albaAddress.getFull_name()))
-                .queryParam("suite", encodeUtf8(albaAddress.getSuite()))
-                .queryParam("address", encodeUtf8(albaAddress.getAddress()))
-                .queryParam("city", encodeUtf8(albaAddress.getCity()))
-                .queryParam("province", encodeUtf8(albaAddress.getProvince()))
-                .queryParam("country", encodeUtf8(albaAddress.getCountry()))
-                .queryParam("postcode", encodeUtf8(albaAddress.getPostcode()))
-                .queryParam("telephone", encodeUtf8(albaAddress.getTelephone()))
-                .queryParam("notes", encodeUtf8(albaAddress.getNotes()))
-                .queryParam("notes_private", encodeUtf8(albaAddress.getNotes_private()))
+                .queryParam("territory_id", albaAddress.getTerritory_id())
+                .queryParam("language_id", albaAddress.getLanguage_id())
+                .queryParam("status", albaAddress.getStatus())
+                .queryParam("lat", albaAddress.getLat())
+                .queryParam("lng", albaAddress.getLng())
+                .queryParam("full_name", albaAddress.getFull_name())
+                //.queryParam("full_name", albaAddress.getFull_name())
+                .queryParam("suite", albaAddress.getSuite())
+                .queryParam("address", albaAddress.getAddress())
+                .queryParam("city", albaAddress.getCity())
+                .queryParam("province", albaAddress.getProvince())
+                .queryParam("country", albaAddress.getCountry())
+                .queryParam("postcode", albaAddress.getPostcode())
+                .queryParam("telephone", albaAddress.getTelephone())
+                .queryParam("notes", albaAddress.getNotes())
+                .queryParam("notes_private", albaAddress.getNotes_private())
                 .build()
                 .toUriString();
 
@@ -40,13 +41,6 @@ public class AlbaHelper {
     }
 
 
-    public static String encodeUtf8(String val) {
-        try {
-            return URLEncoder.encode(val, "UTF-8");
-        } catch (UnsupportedEncodingException ex) {
-            throw new RuntimeException("Error encoding stuff", ex);
-        }
-    }
 
     public static AlbaTerritory parseTerritory(String terrId, String terrHtml) {
 
