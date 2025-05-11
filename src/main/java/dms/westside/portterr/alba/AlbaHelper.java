@@ -13,7 +13,7 @@ import java.net.URLEncoder;
 public class AlbaHelper {
 
     public static boolean isDoorman(AlbaAddress albaAddress) {
-        return albaAddress.getNotes().replaceAll("\\s", "").toUpperCase().matches(".*DOORMAN.*");
+        return !albaAddress.getNotes().toUpperCase().matches(".* VIRTUAL DOORMAN.*") && albaAddress.getNotes().replaceAll("\\s", "").toUpperCase().matches(".*DOORMAN.*");
     }
 
     public static String addQueryParams(AlbaAddress albaAddress, String url) {
