@@ -38,6 +38,9 @@ class AlbaApplicationTests {
 		addr.setNotes("slkfdj DooooRman  sldfkj");
 		Assert.isTrue(!AlbaHelper.isDoorman(addr), "This was NOT supposed to match but did: " + addr.getNotes());
 
+		addr.setNotes("Virtual Doorman");
+		Assert.isTrue(!AlbaHelper.isDoorman(addr), "This was NOT supposed to match but did: " + addr.getNotes());
+
 		addr.setNotes("slkfdj Virtual DoooRman  sldfkj");
 		Assert.isTrue(!AlbaHelper.isDoorman(addr), "This was NOT supposed to match but did: " + addr.getNotes());
 

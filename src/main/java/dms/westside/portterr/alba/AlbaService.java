@@ -35,8 +35,11 @@ public class AlbaService {
     @Value("#{new Integer('${territory.limit:1}')}")
     Integer territoryLimit; //for testing purposes; limit how many territory are processed
 
-    @Value("#{new Integer('${addresses.per.territory.limit:3}')}")
+    @Value("#{new Integer('${addresses.per.territory.limit:1}')}")
     Integer addrPerTerrLimit;  //for testing purposes; limit how many address per terr are processed
+
+    @Value("${territory.ids.to.skip}")
+    List<String> skipTerrIds;
 
     @Autowired
     RestTemplate restTemplate;
@@ -79,8 +82,13 @@ public class AlbaService {
         int totalTerrCount = terrIds.size();
         int terrCount = 1;
         for(String terrId : terrIds) {
-
             Logger.log ("******** Processing Territory Id: " + terrId + " - " + terrCount + " of " + totalTerrCount + " ********" );
+
+            if(skipTerrIds != null && skipTerrIds.contains(terrId)) {
+                Logger.log ("This terrId is in the skip list.  Ignoring...onto the next.");
+                continue;
+            }
+
             Logger.log("Getting territory details...");
             AlbaTerritory albaTerritory = getTerritory(terrId);
             Logger.log("Success! Territory " + albaTerritory.getNumber() + " | " + albaTerritory.getDescription() + " retrieved.");
